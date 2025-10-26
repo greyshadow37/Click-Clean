@@ -7,11 +7,24 @@ interface HeaderProps {
   onNavClick: (pageId: string) => void;
   userRole: UserRole;
   onRoleChange: (newRole: UserRole) => void;
+  onReportClick: () => void;
+  isAuthenticated: boolean;
+  onLoginClick: () => void;
+  onSignupClick: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ activePage, onNavClick, userRole, onRoleChange }) => {
-  const isMunicipal = userRole === 'municipal';
-  const buttonText = isMunicipal ? 'Manage Reports' : 'Report Waste';
+const Header: React.FC<HeaderProps> = ({
+  activePage,
+  onNavClick,
+  userRole,
+  onRoleChange,
+  onReportClick,
+  isAuthenticated,
+  onLoginClick,
+  onSignupClick
+}) => {
+  const isMunicipal = userRole === 'municipal' || userRole === 'admin';
+  const buttonText = isMunicipal ? 'View Reports' : 'Report Issue';
   const buttonIcon = isMunicipal ? 'fas fa-clipboard-list' : 'fas fa-camera';
 
   return (
@@ -19,11 +32,11 @@ const Header: React.FC<HeaderProps> = ({ activePage, onNavClick, userRole, onRol
       <nav className="nav container">
         <div className="nav__brand">
           <i className="fas fa-recycle nav__logo"></i>
-          <span className="nav__title">Click Clean India</span>
+          <span className="nav__title">Click Clean</span>
         </div>
         
         <div className="nav__menu" id="navMenu">
-          {['dashboard', 'training', 'tracking', 'champions', 'marketplace'].map(page => (
+          {['dashboard', 'training', 'tracking', 'champions', 'marketplace', 'profile'].map(page => (
             <a 
               key={page}
               href={`#${page}`} 
@@ -34,26 +47,41 @@ const Header: React.FC<HeaderProps> = ({ activePage, onNavClick, userRole, onRol
                 onNavClick(page);
               }}
             >
-              {page.charAt(0).toUpperCase() + page.slice(1)}
+              {page === 'champions' ? 'Reporters' : page === 'marketplace' ? 'Rewards' : page === 'profile' ? 'Profile' : page.charAt(0).toUpperCase() + page.slice(1)}
             </a>
           ))}
         </div>
         
         <div className="nav__controls">
-          <div className="user-role-selector">
-            <select 
-              id="roleSelector" 
-              className="form-control"
-              value={userRole}
-              onChange={(e) => onRoleChange(e.target.value as UserRole)}
-            >
-              <option value="citizen">Citizen</option>
-              <option value="champion">Green Champion</option>
-              <option value="municipal">Municipal Officer</option>
-              <option value="facility">Facility Manager</option>
-            </select>
-          </div>
-          <button className="btn btn--primary" id="reportBtn">
+          {isAuthenticated ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
+                Logged in as {userRole}
+              </span>
+              <button
+                className="btn btn--secondary btn--small"
+                onClick={() => onNavClick('profile')}
+              >
+                Profile
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn btn--secondary btn--small"
+                onClick={onSignupClick}
+              >
+                Sign Up
+              </button>
+              <button
+                className="btn btn--primary btn--small"
+                onClick={onLoginClick}
+              >
+                Login
+              </button>
+            </div>
+          )}
+          <button className="btn btn--primary" id="reportBtn" onClick={onReportClick}>
             <i className={buttonIcon}></i>
             {buttonText}
           </button>

@@ -8,8 +8,9 @@ import Training from "./components/Training";
 import Tracking from "./components/Tracking";
 import Champions from "./components/Champions"; // New Import
 import Marketplace from "./components/Marketplace"; // New Import
-
-import { initialUserState, UserState, UserRole } from "../lib/data";
+import Chatbot from "./components/Chatbot"; // New Import
+import Profile from "./components/Profile"; // New Import
+import { AuthProvider, useAuth, LoginModal, SignupModal } from "./components/Auth";
 
 // --- MODAL COMPONENTS (Kept local for simplicity) ---
 interface ModalProps {
@@ -17,7 +18,7 @@ interface ModalProps {
   onClose: () => void;
 }
 
-const ReportWasteModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
+const ReportIssueModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
@@ -29,18 +30,23 @@ const ReportWasteModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
           <i className="fas fa-times"></i>
         </button>
         {" "}
-        <h2 className="modal-title">Report New Waste Incident</h2>
+        <h2 className="modal-title">Report New Civic Issue</h2>
         {" "}
-        <form>
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          alert('Issue reporting will be implemented with Supabase integration');
+          onClose();
+        }}>
           {" "}
           <div className="form-group">
             {" "}
-            <label htmlFor="incidentType">Incident Type</label>
+            <label htmlFor="incidentType">Issue Type</label>
             {" "}
             <select id="incidentType" className="form-control">
-              <option>Overflowing Bin</option>
-              <option>Illegal Dumping</option>
-              <option>Missed Collection</option>
+              <option>Pothole</option>
+              <option>Garbage</option>
+              <option>Streetlight</option>
+              <option>Other</option>
               {" "}
             </select>
             {" "}
@@ -53,8 +59,21 @@ const ReportWasteModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
               type="text"
               id="location"
               className="form-control"
-              placeholder="e.g., Sector 15, Gurgaon"
+              placeholder="e.g., Sector 15, Gurgaon or use GPS coordinates"
               required
+            />
+            {" "}
+          </div>
+          {" "}
+          <div className="form-group">
+            {" "}
+            <label htmlFor="photo">Photo (Optional)</label>
+            {" "}
+            <input
+              type="file"
+              id="photo"
+              className="form-control"
+              accept="image/*"
             />
             {" "}
           </div>
@@ -91,27 +110,55 @@ const ReportWasteModal: React.FC<ModalProps> = ({ isOpen, onClose }) => {
         {" "}
       </div>
       {" "}
+      {" "}
     </div>
   );
 };
 
-export default function HomePage() {
+// Main App Component (inside AuthProvider)
+const AppContent: React.FC = () => {
+  const { user, isAuthenticated, loading } = useAuth();
   const [activePage, setActivePage] = useState<string>("dashboard");
-  const [user, setUser] = useState<UserState>(initialUserState);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState<boolean>(false);
+
+  // Show loading spinner while auth is initializing
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '18px'
+      }}>
+        Loading...
+      </div>
+    );
+  }
 
   const handleNavClick = (pageId: string) => {
+    // Require authentication for profile page
+    if (pageId === 'profile' && !isAuthenticated) {
+      setIsLoginModalOpen(true);
+      return;
+    }
     setActivePage(pageId);
     setIsModalOpen(false);
   };
 
-  const handleRoleChange = (newRole: UserRole) => {
-    setUser((prevUser) => ({ ...prevUser, role: newRole }));
+  const openReportModal = () => {
+    if (!isAuthenticated) {
+      setIsLoginModalOpen(true);
+      return;
+    }
+    setIsModalOpen(true);
   };
 
-  const openReportModal = () => setIsModalOpen(true);
-  const closeReportModal = () => setIsModalOpen(false); // Function to render the correct component
+  const closeReportModal = () => setIsModalOpen(false);
 
+  // Function to render the correct component
   const renderPage = () => {
     switch (activePage) {
       case "training":
@@ -122,27 +169,60 @@ export default function HomePage() {
         return <Champions />;
       case "marketplace":
         return <Marketplace />;
+      case "profile":
+        return <Profile />;
       case "dashboard":
       default:
-        return <Dashboard userRole={user.role} />;
+        return <Dashboard userRole={user?.role || 'citizen'} />;
     }
   };
 
   return (
     <>
-      {" "}
       <Header
         activePage={activePage}
         onNavClick={handleNavClick}
-        userRole={user.role}
-        onRoleChange={handleRoleChange}
+        userRole={user?.role || 'citizen'}
+        onRoleChange={() => {}} // Role changes now handled through login
         onReportClick={openReportModal}
+        isAuthenticated={isAuthenticated}
+        onLoginClick={() => setIsLoginModalOpen(true)}
+        onSignupClick={() => setIsSignupModalOpen(true)}
       />
-      <main className="main">        {renderPage()}      </main>
+      <main className="main">{renderPage()}</main>
       <BottomNav activePage={activePage} onNavClick={handleNavClick} />
-      {/* Report Waste Modal */}
-      <ReportWasteModal isOpen={isModalOpen} onClose={closeReportModal} />
-      {" "}
+      {/* Report Issue Modal */}
+      <ReportIssueModal isOpen={isModalOpen} onClose={closeReportModal} />
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onLoginSuccess={(user: { id: string; email: string; name: string; role: string }) => setIsLoginModalOpen(false)}
+        onSwitchToSignup={() => {
+          setIsLoginModalOpen(false);
+          setIsSignupModalOpen(true);
+        }}
+      />
+      {/* Signup Modal */}
+      <SignupModal
+        isOpen={isSignupModalOpen}
+        onClose={() => setIsSignupModalOpen(false)}
+        onSignupSuccess={() => setIsSignupModalOpen(false)}
+        onSwitchToLogin={() => {
+          setIsSignupModalOpen(false);
+          setIsLoginModalOpen(true);
+        }}
+      />
+      {/* Chatbot */}
+      <Chatbot />
     </>
+  );
+};
+
+export default function HomePage() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

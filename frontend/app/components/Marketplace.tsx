@@ -1,39 +1,44 @@
+"use client";
+
 // components/Marketplace.tsx
 import React, { useState, useMemo } from 'react';
-import { appData, Product } from '../../lib/data';
+import { appData, Reward } from '../../lib/data';
 
 // --- Local Types and State ---
-type ProductCategory = 'all' | 'Composting' | 'Recycling' | 'Sustainable' | 'Voucher';
+type RewardCategory = 'all' | 'Recognition' | 'Achievement' | 'Service' | 'Social' | 'Utility';
 
-interface CartItem extends Product {
+interface CartItem extends Reward {
     quantity: number;
 }
 
 // --- Local Component Definitions ---
-interface ProductCardProps {
-    product: Product;
-    onAddToCart: (product: Product) => void;
+interface RewardCardProps {
+    reward: Reward;
+    onAddToCart: (reward: Reward) => void;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => (
+const RewardCard: React.FC<RewardCardProps> = ({ reward, onAddToCart }) => (
     <div className="product-card">
         <div className="product-image">
-            <i className="fas fa-box-open"></i>
+            <i className="fas fa-award"></i>
         </div>
         <div className="product-info">
             <div>
-                <h3 className="product-title">{product.name}</h3>
+                <h3 className="product-title">{reward.name}</h3>
                 <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>
-                    Category: {product.category}
+                    Category: {reward.category}
                 </p>
-                <p className="product-price">₹{product.price}</p>
+                <p className="product-price">{reward.points} points</p>
+                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
+                    {reward.description}
+                </p>
             </div>
             <div className="product-actions">
                 <button 
                     className="btn btn--primary btn--small" 
-                    onClick={() => onAddToCart(product)}
+                    onClick={() => onAddToCart(reward)}
                 >
-                    <i className="fas fa-cart-plus"></i> Add to Cart
+                    <i className="fas fa-cart-plus"></i> Redeem
                 </button>
             </div>
         </div>
@@ -44,37 +49,37 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => (
 // --- Main Marketplace Component ---
 
 const Marketplace: React.FC = () => {
-    const [filter, setFilter] = useState<ProductCategory>('all');
+    const [filter, setFilter] = useState<RewardCategory>('all');
     const [cart, setCart] = useState<CartItem[]>([]);
 
-    const productCategories: ProductCategory[] = ['all', 'Composting', 'Recycling', 'Sustainable', 'Voucher'];
+    const rewardCategories: RewardCategory[] = ['all', 'Recognition', 'Achievement', 'Service', 'Social', 'Utility'];
 
-    // Filter products based on the selected category
-    const filteredProducts = useMemo(() => {
-        // FIX: Check if appData.marketplace is defined, otherwise default to an empty array.
-        const products = appData.marketplace || []; 
+    // Filter rewards based on the selected category
+    const filteredRewards = useMemo(() => {
+        // FIX: Check if appData.rewards is defined, otherwise default to an empty array.
+        const rewards = appData.rewards || []; 
         
-        return products.filter(product => 
-            filter === 'all' || product.category === filter
+        return rewards.filter(reward => 
+            filter === 'all' || reward.category === filter
         );
     }, [filter]);
 
     // Calculate cart totals
-    const { totalItems, totalPrice } = useMemo(() => {
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const { totalItems, totalPoints } = useMemo(() => {
+        const total = cart.reduce((sum, item) => sum + (item.points * item.quantity), 0);
         const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-        return { totalItems: count, totalPrice: total };
+        return { totalItems: count, totalPoints: total };
     }, [cart]);
 
-    const handleAddToCart = (product: Product) => {
+    const handleAddToCart = (reward: Reward) => {
         setCart(prevCart => {
-            const existingItem = prevCart.find(item => item.id === product.id);
+            const existingItem = prevCart.find(item => item.id === reward.id);
             if (existingItem) {
                 return prevCart.map(item =>
-                    item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+                    item.id === reward.id ? { ...item, quantity: item.quantity + 1 } : item
                 );
             } else {
-                return [...prevCart, { ...product, quantity: 1 }];
+                return [...prevCart, { ...reward, quantity: 1 }];
             }
         });
     };
@@ -85,7 +90,7 @@ const Marketplace: React.FC = () => {
             return;
         }
         // Simulate a checkout process
-        console.log(`Checking out ${totalItems} items for a total of ₹${totalPrice}.`);
+        console.log(`Checking out ${totalItems} items for a total of ${totalPoints} points.`);
         setCart([]); // Clear cart after checkout
         // Replaced alert() with console.log for stability
         console.log('Thank you for your purchase! Your order is being processed.'); 
@@ -94,7 +99,7 @@ const Marketplace: React.FC = () => {
     return (
         <div className="page page--active" id="marketplace">
             <div className="container">
-                <h1 className="page-header">Rewards Marketplace</h1>
+                                <h1 className="page-header">Rewards Marketplace</h1>
 
                 <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
                     {/* Products Column */}
@@ -103,26 +108,26 @@ const Marketplace: React.FC = () => {
                             <h2 className="section-title">Browse Products</h2>
                             
                             <div className="marketplace-filters">
-                                {productCategories.map(cat => (
+                                {rewardCategories.map(cat => (
                                     <button
                                         key={cat}
-                                        className={`btn btn--secondary btn--small ${filter === cat ? 'filter-btn active' : ''}`}
+                                        className={`btn btn--secondary btn--small ${filter === cat ? 'active' : ''}`}
                                         onClick={() => setFilter(cat)}
                                     >
-                                        {cat === 'all' ? 'All' : cat}
+                                        {cat === 'all' ? 'All Rewards' : cat}
                                     </button>
                                 ))}
                             </div>
 
-                            <div className="products-grid">
-                                {filteredProducts.map(product => (
-                                    <ProductCard 
-                                        key={product.id} 
-                                        product={product} 
-                                        onAddToCart={handleAddToCart} 
+                            <div className="product-grid">
+                                {filteredRewards.map(reward => (
+                                    <RewardCard
+                                        key={reward.id}
+                                        reward={reward}
+                                        onAddToCart={handleAddToCart}
                                     />
                                 ))}
-                                {filteredProducts.length === 0 && <p>No products found in this category.</p>}
+                                {filteredRewards.length === 0 && <p>No rewards found in this category.</p>}
                             </div>
                         </section>
                     </div>
@@ -139,7 +144,7 @@ const Marketplace: React.FC = () => {
                                     cart.map(item => (
                                         <div key={item.id} className="cart-item">
                                             <span>{item.name} (x{item.quantity})</span>
-                                            <span>₹{item.price * item.quantity}</span>
+                                            <span>{item.points * item.quantity} points</span>
                                         </div>
                                     ))
                                 )}
@@ -147,7 +152,7 @@ const Marketplace: React.FC = () => {
 
                             <div className="cart-total">
                                 <span>Total:</span>
-                                <span>₹{totalPrice}</span>
+                                <span>{totalPoints} points</span>
                             </div>
 
                             <button 

@@ -1,13 +1,13 @@
 // components/Champions.tsx
 import React, { useMemo } from 'react';
-import { appData, GreenChampion } from '../../lib/data';
+import { appData, CommunityReporter } from '../../lib/data';
 
-interface ChampionRowProps {
-    champion: GreenChampion;
+interface ReporterRowProps {
+    reporter: CommunityReporter;
     index: number;
 }
 
-const ChampionRow: React.FC<ChampionRowProps> = ({ champion, index }) => {
+const ReporterRow: React.FC<ReporterRowProps> = ({ reporter, index }) => {
     const rank = index + 1;
     const rankClass = rank <= 3 ? `rank-${rank}` : '';
 
@@ -16,29 +16,29 @@ const ChampionRow: React.FC<ChampionRowProps> = ({ champion, index }) => {
             <td>
                 <span className="rank-badge">{rank}</span>
             </td>
-            <td>{champion.name}</td>
-            <td>{champion.city}</td>
-            <td>{champion.wasteDiverted} kg</td>
-            <td>{champion.trainingCompleted}</td>
+            <td>{reporter.name}</td>
+            <td>{reporter.city}</td>
+            <td>{reporter.issuesResolved} issues</td>
+            <td>{reporter.trainingCompleted}</td>
         </tr>
     );
 };
 
 const Champions: React.FC = () => {
-    // Sort champions by waste diverted (descending)
-    const sortedChampions = useMemo(() => {
-        return [...appData.greenChampions].sort((a, b) => b.wasteDiverted - a.wasteDiverted);
+    // Sort reporters by issues resolved (descending)
+    const sortedReporters = useMemo(() => {
+        return [...appData.communityReporters].sort((a, b) => b.issuesResolved - a.issuesResolved);
     }, []);
 
     return (
         <div className="page page--active" id="champions">
             <div className="container">
-                <h1 className="page-header">Green Champions Leaderboard</h1>
+                <h1 className="page-header">Community Reporters Leaderboard</h1>
 
                 <section className="section">
-                    <h2 className="section-title">Top Green Champions</h2>
+                    <h2 className="section-title">Top Community Reporters</h2>
                     <p style={{ marginBottom: '16px', color: 'var(--color-text-secondary)' }}>
-                        Recognizing individuals who have made the biggest impact on waste diversion and training.
+                        Recognizing individuals who have made the biggest impact on civic issue resolution and community engagement.
                     </p>
 
                     <div className="leaderboard-container" style={{ overflowX: 'auto' }}>
@@ -46,15 +46,15 @@ const Champions: React.FC = () => {
                             <thead>
                                 <tr>
                                     <th>Rank</th>
-                                    <th>Champion</th>
+                                    <th>Reporter</th>
                                     <th>City</th>
-                                    <th>Waste Diverted</th>
+                                    <th>Issues Resolved</th>
                                     <th>Modules Completed</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedChampions.map((champion, index) => (
-                                    <ChampionRow key={champion.id} champion={champion} index={index} />
+                                {sortedReporters.map((reporter, index) => (
+                                    <ReporterRow key={reporter.id} reporter={reporter} index={index} />
                                 ))}
                             </tbody>
                         </table>

@@ -1,6 +1,5 @@
-// components/Dashboard.tsx
 import React from 'react';
-import { appData, WasteBin, UserRole } from '../../lib/data';
+import { appData, CivicIssue, UserRole } from '../../lib/data';
 
 interface DashboardProps {
   userRole: UserRole;
@@ -18,8 +17,8 @@ interface ProgressItemProps {
   percentage: number;
 }
 
-interface BinCardProps {
-  bin: WasteBin;
+interface IssueCardProps {
+  issue: CivicIssue;
 }
 
 const formatNumber = (num: number): string => num.toLocaleString('en-IN');
@@ -48,28 +47,25 @@ const ProgressItem: React.FC<ProgressItemProps> = ({ title, percentage }) => (
   </div>
 );
 
-const BinCard: React.FC<BinCardProps> = ({ bin }) => {
-  let fillClass = 'fill-circle--ok';
-  if (bin.fillLevel > 90) fillClass = 'fill-circle--overflowing';
-  else if (bin.fillLevel > 80) fillClass = 'fill-circle--critical';
+const IssueCard: React.FC<IssueCardProps> = ({ issue }) => {
+  let statusClass = 'status-badge--ok';
+  if (issue.status === 'pending') statusClass = 'status-badge--pending';
+  else if (issue.status === 'in_progress') statusClass = 'status-badge--in-progress';
 
   return (
     <div className="bin-card">
       <div className="bin-header">
-        <i className="fas fa-trash-alt bin-icon"></i>
-        <h4 className="bin-location">{bin.location}</h4>
-        <span className={`status-badge status-badge--${bin.status.replace('_', '-')}`}>
-          {bin.status.replace(/_/g, ' ').toUpperCase()}
+        <i className="fas fa-exclamation-triangle bin-icon"></i>
+        <h4 className="bin-location">{issue.location}</h4>
+        <span className={`status-badge ${statusClass}`}>
+          {issue.status.replace(/_/g, ' ').toUpperCase()}
         </span>
       </div>
       <div className="bin-details">
-        {/* Use style attribute to pass CSS variable for fill level */}
-        <div className={`fill-circle ${fillClass}`} style={{'--fill-level': `${bin.fillLevel}%`} as React.CSSProperties}>
-          <span>{bin.fillLevel}%</span>
-        </div>
         <div className="bin-meta">
-          <p>Type: <strong>{bin.type}</strong></p>
-          <p>Last Collection: <strong>{bin.lastCollection}</strong></p>
+          <p>Type: <strong>{issue.type}</strong></p>
+          <p>Reported: <strong>{issue.date_reported}</strong></p>
+          <p>Priority: <strong>{issue.priority.toUpperCase()}</strong></p>
         </div>
       </div>
     </div>
@@ -78,57 +74,57 @@ const BinCard: React.FC<BinCardProps> = ({ bin }) => {
 
 
 const Dashboard: React.FC<DashboardProps> = ({ userRole }) => {
-  const stats = appData.wasteStatistics;
-  const { wasteBins, incidents } = appData;
+  const stats = appData.civicStatistics;
+  const { civicIssues, complaints } = appData;
 
   return (
     <div className="page page--active" id="dashboard">
       <div className="container">
-        <h1 className="page-header">National Waste Overview</h1>
+        <h1 className="page-header">City Issues Overview</h1>
 
         {/* Key Statistics Cards */}
         <div className="stats-grid">
-          <StatCard iconClass="fas fa-trash-alt" value={stats.dailyGeneration} label="TPD Generated" />
-          <StatCard iconClass="fas fa-recycle" value={stats.dailyTreatment} label="TPD Treated" />
-          <StatCard iconClass="fas fa-mountain" value={stats.landfillDisposal} label="TPD Landfilled" />
-          <StatCard iconClass="fas fa-exclamation-triangle" value={stats.unaccounted} label="TPD Unaccounted" isWarning={true} />
+          <StatCard iconClass="fas fa-clipboard-list" value={stats.dailyReports} label="Daily Reports" />
+          <StatCard iconClass="fas fa-check-circle" value={stats.resolvedIssues} label="Resolved Issues" />
+          <StatCard iconClass="fas fa-clock" value={stats.pendingIssues} label="Pending Issues" />
+          <StatCard iconClass="fas fa-exclamation-triangle" value={stats.averageResolutionTime} label="Avg Resolution (days)" isWarning={stats.averageResolutionTime > 10} />
         </div>
 
         {/* Progress Indicators */}
         <div className="progress-section">
-          <ProgressItem title="Treatment Efficiency" percentage={stats.treatmentPercentage} />
-          <ProgressItem title="Collection Efficiency" percentage={stats.collectionEfficiency} />
+          <ProgressItem title="Resolution Rate" percentage={Math.round((stats.resolvedIssues / stats.dailyReports) * 100)} />
+          <ProgressItem title="Citizen Satisfaction" percentage={stats.citizenSatisfaction} />
         </div>
         
         {/* Dynamic Content Sections */}
 
-        {/* Champion Tasks (Conditional for Green Champion role) */}
-        {userRole === 'champion' && (
+        {/* Reporter Tasks (Conditional for Community Reporter role) */}
+        {userRole === 'reporter' && (
           <section id="championTasks" className="section">
-            <h2 className="section-title">Green Champion Tasks</h2>
+            <h2 className="section-title">Community Reporter Tasks</h2>
             <div className="champion-tasks-grid">
-                <p>Tasks for the Green Champion role will be displayed here.</p>
+                <p>Tasks for the Community Reporter role will be displayed here.</p>
             </div>
           </section>
         )}
 
-        {/* Smart Bin Status */}
+        {/* Civic Issues Status */}
         <section className="section">
-          <h2 className="section-title">Smart Bin Status (Area: {userRole === 'citizen' ? 'Delhi' : userRole.charAt(0).toUpperCase() + userRole.slice(1)})</h2>
+          <h2 className="section-title">Civic Issues Status (Area: {userRole === 'citizen' ? 'Delhi' : userRole.charAt(0).toUpperCase() + userRole.slice(1)})</h2>
           <div className="bin-grid" id="binGrid">
-            {wasteBins.map(bin => <BinCard key={bin.id} bin={bin} />)}
+            {civicIssues.map(issue => <IssueCard key={issue.id} issue={issue} />)}
           </div>
         </section>
 
-        {/* Incident Reports */}
+        {/* Recent Complaints */}
         <section className="section incident-section">
-          <h2 className="section-title">Recent Incidents</h2>
+          <h2 className="section-title">Recent Complaints</h2>
           <div className="incident-reports-list">
-            {incidents.map(incident => (
-              <div key={incident.id} className="incident-card">
-                <div className="incident-type">{incident.type}</div>
-                <div className="incident-location"><i className="fas fa-map-marker-alt"></i> {incident.location}</div>
-                <span className={`status-badge status-badge--${incident.severity}`}>{incident.severity.toUpperCase()}</span>
+            {complaints.map(complaint => (
+              <div key={complaint.id} className="incident-card">
+                <div className="incident-type">{complaint.type}</div>
+                <div className="incident-location"><i className="fas fa-map-marker-alt"></i> {complaint.location}</div>
+                <span className={`status-badge status-badge--${complaint.status}`}>{complaint.status.toUpperCase()}</span>
               </div>
             ))}
           </div>

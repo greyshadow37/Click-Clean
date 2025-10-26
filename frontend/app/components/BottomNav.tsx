@@ -10,8 +10,8 @@ const navItems = [
   { id: 'dashboard', icon: 'fas fa-home', label: 'Dashboard' },
   { id: 'training', icon: 'fas fa-graduation-cap', label: 'Training' },
   { id: 'tracking', icon: 'fas fa-map-marker-alt', label: 'Tracking' },
-  { id: 'champions', icon: 'fas fa-users', label: 'Champions' },
-  { id: 'marketplace', icon: 'fas fa-shopping-cart', label: 'Shop' },
+  { id: 'profile', icon: 'fas fa-user', label: 'Profile' },
+  { id: 'marketplace', icon: 'fas fa-gift', label: 'Rewards' },
 ];
 
 const BottomNav: React.FC<BottomNavProps> = ({ activePage, onNavClick }) => {
