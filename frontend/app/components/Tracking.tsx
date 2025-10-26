@@ -38,7 +38,7 @@ const DepartmentCard: React.FC<DepartmentCardProps> = ({ department }) => {
         <span>{department.location}</span>
       </div>
       <div style={{ marginTop: '8px' }}>
-        Status: 
+        Status:
         <span className={`facility-status-indicator ${statusClass}`}></span>
         <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>
           {department.status.replace(/_/g, ' ')}
@@ -56,7 +56,7 @@ const IssueCard: React.FC<IssueCardProps> = ({ issue }) => {
     let statusClass = 'status-badge--ok';
     if (issue.status === 'pending') statusClass = 'status-badge--pending';
     else if (issue.status === 'in_progress') statusClass = 'status-badge--in-progress';
-  
+
     return (
       <div className="bin-card">
         <div className="bin-header">
@@ -88,8 +88,8 @@ const Tracking: React.FC = () => {
   // Generate stable random offsets for departments and issues without coordinates
   const randomOffsets = useMemo(() => {
     const offsets: { [key: string]: { lat: number; lng: number } } = {};
-    
-    appData.departments.forEach((dept, index) => {
+
+    appData.departments.forEach((dept) => { // Removed index as it's not used
       if (!dept.latitude || !dept.longitude) {
         offsets[`dept-${dept.id}`] = {
           lat: (Math.random() - 0.5) * 0.1,
@@ -97,8 +97,8 @@ const Tracking: React.FC = () => {
         };
       }
     });
-    
-    appData.civicIssues.forEach((issue, index) => {
+
+    appData.civicIssues.forEach((issue) => { // Removed index as it's not used
       if (!issue.latitude || !issue.longitude) {
         offsets[`issue-${issue.id}`] = {
           lat: (Math.random() - 0.5) * 0.1,
@@ -106,20 +106,20 @@ const Tracking: React.FC = () => {
         };
       }
     });
-    
+
     return offsets;
-  }, []);
+  }, []); // Added dependency array for useMemo
 
   // Filter Departments based on the selected type
-  const filteredDepartments = appData.departments.filter(department => 
+  const filteredDepartments = appData.departments.filter(department =>
     departmentFilter === 'all' || department.type === departmentFilter
   );
 
   // Filter Issues based on the selected status
-  const filteredIssues = appData.civicIssues.filter(issue => 
+  const filteredIssues = appData.civicIssues.filter(issue =>
     issueFilter === 'all' || issue.status === issueFilter
   );
-  
+
   // List of all department types for the filter buttons
   const departmentTypes: DepartmentType[] = ['all', 'Public Works', 'Infrastructure', 'Utilities', 'Maintenance'];
   const issueStatuses: IssueType[] = ['all', 'pending', 'in_progress', 'resolved'];
@@ -133,7 +133,7 @@ const Tracking: React.FC = () => {
         {/* Interactive Map */}
         <div className="section">
           <h2 className="section-title">Interactive Map</h2>
-          {GOOGLE_MAPS_API_KEY ? (
+          {GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY !== 'your_google_maps_api_key_here' ? ( // Added check for placeholder key
             <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
               <GoogleMap
                 mapContainerStyle={mapContainerStyle}
@@ -159,7 +159,8 @@ const Tracking: React.FC = () => {
                           }"/>
                         </svg>
                       `)}`,
-                      scaledSize: new google.maps.Size(32, 32)
+                      // *** FIX HERE ***
+                      scaledSize: { width: 32, height: 32 } as google.maps.Size
                     }}
                   />
                 ))}
@@ -182,7 +183,8 @@ const Tracking: React.FC = () => {
                           }"/>
                         </svg>
                       `)}`,
-                      scaledSize: new google.maps.Size(28, 28)
+                       // *** FIX HERE ***
+                      scaledSize: { width: 28, height: 28 } as google.maps.Size
                     }}
                   />
                 ))}
@@ -191,15 +193,16 @@ const Tracking: React.FC = () => {
                 {selectedMarker && (
                   <InfoWindow
                     position={{
-                      lat: 'latitude' in selectedMarker && selectedMarker.latitude ? selectedMarker.latitude : defaultCenter.lat,
-                      lng: 'longitude' in selectedMarker && selectedMarker.longitude ? selectedMarker.longitude : defaultCenter.lng
+                        // Safer check for lat/lng properties before accessing
+                        lat: ('latitude' in selectedMarker && selectedMarker.latitude) ? selectedMarker.latitude : defaultCenter.lat + (randomOffsets[`${'name' in selectedMarker ? 'dept' : 'issue'}-${selectedMarker.id}`]?.lat || 0),
+                        lng: ('longitude' in selectedMarker && selectedMarker.longitude) ? selectedMarker.longitude : defaultCenter.lng + (randomOffsets[`${'name' in selectedMarker ? 'dept' : 'issue'}-${selectedMarker.id}`]?.lng || 0)
                     }}
                     onCloseClick={() => setSelectedMarker(null)}
                   >
-                    <div style={{ maxWidth: '200px' }}>
+                    <div style={{ maxWidth: '200px', fontSize: '14px', lineHeight: '1.4' }}>
                       {'type' in selectedMarker && 'name' in selectedMarker ? (
                         // It's a department
-                        <div>
+                        <>
                           <h4 style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>
                             {selectedMarker.name}
                           </h4>
@@ -210,15 +213,16 @@ const Tracking: React.FC = () => {
                             <span style={{
                               color: selectedMarker.status === 'operational' ? '#28a745' :
                                      selectedMarker.status === 'under_maintenance' ? '#ffc107' : '#dc3545',
-                              fontWeight: 'bold'
+                              fontWeight: 'bold',
+                              marginLeft: '4px'
                             }}>
                               {selectedMarker.status.replace(/_/g, ' ').toUpperCase()}
                             </span>
                           </p>
-                        </div>
+                        </>
                       ) : (
                         // It's an issue
-                        <div>
+                        <>
                           <h4 style={{ margin: '0 0 8px 0', fontWeight: 'bold' }}>
                             {selectedMarker.type} Issue
                           </h4>
@@ -226,7 +230,7 @@ const Tracking: React.FC = () => {
                           <p style={{ margin: '4px 0' }}><strong>Status:</strong> {selectedMarker.status.replace(/_/g, ' ').toUpperCase()}</p>
                           <p style={{ margin: '4px 0' }}><strong>Priority:</strong> {selectedMarker.priority.toUpperCase()}</p>
                           <p style={{ margin: '4px 0' }}><strong>Reported:</strong> {selectedMarker.date_reported}</p>
-                        </div>
+                        </>
                       )}
                     </div>
                   </InfoWindow>
@@ -234,15 +238,17 @@ const Tracking: React.FC = () => {
               </GoogleMap>
             </LoadScript>
           ) : (
-            <div className="map-placeholder">
-              <i className="fas fa-globe-asia"></i>
-              <span>Interactive Map</span>
-              <p style={{ fontSize: '14px', marginTop: '8px', color: 'var(--color-text-secondary)' }}>
-                To enable Google Maps, add your API key to <code>.env.local</code>
+            <div className="map-placeholder" style={{ textAlign: 'center' }}>
+              <div>
+                <i className="fas fa-globe-asia" style={{ fontSize: '48px', marginBottom: '16px' }}></i><br/>
+                <span>Interactive Map Requires Setup</span>
+              </div>
+              <p style={{ fontSize: '14px', marginTop: '16px', color: 'var(--color-text-secondary)' }}>
+                To enable Google Maps, please add your API key to <code>.env.local</code> and restart the server. <br/> See <code>GOOGLE_MAPS_SETUP.md</code> for instructions.
               </p>
             </div>
           )}
-          {GOOGLE_MAPS_API_KEY && (
+          {GOOGLE_MAPS_API_KEY && GOOGLE_MAPS_API_KEY !== 'your_google_maps_api_key_here' && (
             <p style={{ marginTop: '8px', fontSize: '14px', color: 'var(--color-text-secondary)' }}>
               Green markers: Departments | Colored markers: Issues (Green: Resolved, Yellow: In Progress, Red: Pending)
             </p>
@@ -252,12 +258,12 @@ const Tracking: React.FC = () => {
         {/* Departments Section */}
         <section className="section">
           <h2 className="section-title">Department Locations</h2>
-          
+
           <div className="tracking-controls">
             {departmentTypes.map(type => (
               <button
                 key={type}
-                className={`btn btn--secondary btn--small ${departmentFilter === type ? 'filter-btn active' : ''}`}
+                className={`btn btn--secondary btn--small filter-btn ${departmentFilter === type ? 'active' : ''}`} // Added filter-btn class
                 onClick={() => setDepartmentFilter(type)}
               >
                 {type === 'all' ? 'All Types' : type}
@@ -281,7 +287,7 @@ const Tracking: React.FC = () => {
                 {issueStatuses.map(status => (
                     <button
                         key={status}
-                        className={`btn btn--secondary btn--small ${issueFilter === status ? 'filter-btn active' : ''}`}
+                        className={`btn btn--secondary btn--small filter-btn ${issueFilter === status ? 'active' : ''}`} // Added filter-btn class
                         onClick={() => setIssueFilter(status)}
                     >
                         {status === 'all' ? 'All Issues' : status.replace(/_/g, ' ').toUpperCase()}
